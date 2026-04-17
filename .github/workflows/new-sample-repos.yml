@@ -1,0 +1,436 @@
+name: Create 3 Sample Repos for appsettings + common.yml workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Create repos under personal account or org?'
+        required: true
+        default: 'personal'
+        type: choice
+        options:
+          - personal
+          - org
+      org_name:
+        description: 'Org name (only needed if you chose org above)'
+        required: false
+        default: ''
+
+jobs:
+  create-repos:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # ─────────────────────────────────────────
+      # STEP 1: Create the 3 repos
+      # ─────────────────────────────────────────
+
+      - name: Create common-config repo
+        run: |
+          if [ "${{ github.event.inputs.target }}" = "org" ]; then
+            API_URL="https://api.github.com/orgs/${{ github.event.inputs.org_name }}/repos"
+          else
+            API_URL="https://api.github.com/user/repos"
+          fi
+
+          curl -s -X POST "$API_URL" \
+            -H "Authorization: token ${{ secrets.GITHUB_PAT }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -d '{"name":"common-config","description":"Shared config source of truth","private":false,"auto_init":true}'
+
+      - name: Create app-api repo
+        run: |
+          if [ "${{ github.event.inputs.target }}" = "org" ]; then
+            API_URL="https://api.github.com/orgs/${{ github.event.inputs.org_name }}/repos"
+          else
+            API_URL="https://api.github.com/user/repos"
+          fi
+
+          curl -s -X POST "$API_URL" \
+            -H "Authorization: token ${{ secrets.GITHUB_PAT }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -d '{"name":"app-api","description":"Backend app — consumes common-config","private":false,"auto_init":true}'
+
+      - name: Create app-frontend repo
+        run: |
+          if [ "${{ github.event.inputs.target }}" = "org" ]; then
+            API_URL="https://api.github.com/orgs/${{ github.event.inputs.org_name }}/repos"
+          else
+            API_URL="https://api.github.com/user/repos"
+          fi
+
+          curl -s -X POST "$API_URL" \
+            -H "Authorization: token ${{ secrets.GITHUB_PAT }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -d '{"name":"app-frontend","description":"Frontend app — consumes common-config","private":false,"auto_init":true}'
+
+      - name: Wait for repos to initialize
+        run: sleep 8
+
+      # ─────────────────────────────────────────
+      # STEP 2: Push files to common-config
+      # ─────────────────────────────────────────
+
+      - name: Push common.yml to common-config
+        run: |
+          OWNER="${{ github.repository_owner }}"
+
+          CONTENT='Environment: "production"
+
+          Azure:
+            StorageAccount: "wiseprodstorageaccount"
+            Region: "eastus"
+            KeyVaultUrl: "https://mykeyvault.vault.azure.net/"
+
+          Logging:
+            LogLevel: "Warning"
+            RetentionDays: 30
+
+          Api:
+            BaseUrl: "https://api.mycompany.com"
+            TimeoutSeconds: 30
+            MaxRetries: 3
+
+          Database:
+            Host: "myserver.database.windows.net"
+            Port: 1433
+            Name: "myappdb"'
+
+          ENCODED=$(echo "$CONTENT" | base64 -w 0)
+
+          curl -s -X PUT \
+            -H "Authorization: token ${{ secrets.GITHUB_PAT }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/$OWNER/common-config/contents/common.yml" \
+            -d "{\"message\":\"add common.yml\",\"content\":\"$ENCODED\"}"
+
+      - name: Push notify-apps workflow to common-config
+        run: |
+          OWNER="${{ github.repository_owner }}"
+
+          CONTENT='name: Notify apps when common.yml changes
+
+          on:
+            push:
+              branches: [ "main" ]
+              paths:
+                - "common.yml"
+
+          jobs:
+            notify:
+              runs-on: ubuntu-latest
+              steps:
+                - name: Trigger app-api refresh
+                  run: |
+                    curl -s -X POST \
+                      -H "Authorization: token ${{ secrets.DISPATCH_PAT }}" \
+                      -H "Accept: application/vnd.github.v3+json" \
+                      https://api.github.com/repos/'"$OWNER"'/app-api/dispatches \
+                      -d '"'"'{"event_type":"common-config-updated"}'"'"'
+
+                - name: Trigger app-frontend refresh
+                  run: |
+                    curl -s -X POST \
+                      -H "Authorization: token ${{ secrets.DISPATCH_PAT }}" \
+                      -H "Accept: application/vnd.github.v3+json" \
+                      https://api.github.com/repos/'"$OWNER"'/app-frontend/dispatches \
+                      -d '"'"'{"event_type":"common-config-updated"}'"'"''
+
+          ENCODED=$(echo "$CONTENT" | base64 -w 0)
+
+          curl -s -X PUT \
+            -H "Authorization: token ${{ secrets.GITHUB_PAT }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/$OWNER/common-config/contents/.github/workflows/notify-apps.yml" \
+            -d "{\"message\":\"add notify-apps workflow\",\"content\":\"$ENCODED\"}"
+
+      # ─────────────────────────────────────────
+      # STEP 3: Push files to app-api
+      # ─────────────────────────────────────────
+
+      - name: Push appsettings.json to app-api
+        run: |
+          OWNER="${{ github.repository_owner }}"
+
+          CONTENT='{
+            "Environment": "",
+            "Azure": {
+              "StorageAccount": "",
+              "Region": "",
+              "KeyVaultUrl": ""
+            },
+            "Logging": {
+              "LogLevel": "",
+              "RetentionDays": 0
+            },
+            "Api": {
+              "BaseUrl": "",
+              "TimeoutSeconds": 0,
+              "MaxRetries": 0
+            },
+            "Database": {
+              "Host": "",
+              "Port": 0,
+              "Name": "",
+              "Password": ""
+            }
+          }'
+
+          ENCODED=$(echo "$CONTENT" | base64 -w 0)
+
+          curl -s -X PUT \
+            -H "Authorization: token ${{ secrets.GITHUB_PAT }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/$OWNER/app-api/contents/appsettings.json" \
+            -d "{\"message\":\"add appsettings.json\",\"content\":\"$ENCODED\"}"
+
+      - name: Push refresh script to app-api
+        run: |
+          OWNER="${{ github.repository_owner }}"
+
+          CONTENT='import yaml
+          import json
+          import os
+
+          COMMON_YML_PATH = "common.yml"
+          APPSETTINGS_PATH = "appsettings.json"
+
+          def deep_merge(base, override):
+              for key, value in override.items():
+                  if key in base and isinstance(base[key], dict) and isinstance(value, dict):
+                      deep_merge(base[key], value)
+                  else:
+                      base[key] = value
+              return base
+
+          def main():
+              print(f"Reading: {COMMON_YML_PATH}")
+              with open(COMMON_YML_PATH, "r") as f:
+                  common_config = yaml.safe_load(f)
+
+              print(f"Reading: {APPSETTINGS_PATH}")
+              with open(APPSETTINGS_PATH, "r") as f:
+                  appsettings = json.load(f)
+
+              updated = deep_merge(appsettings, common_config)
+
+              db_password = os.environ.get("DB_PASSWORD", "")
+              if db_password:
+                  updated["Database"]["Password"] = db_password
+                  print("Injected DB_PASSWORD from environment")
+
+              with open(APPSETTINGS_PATH, "w") as f:
+                  json.dump(updated, f, indent=2)
+
+              print("Done. appsettings.json refreshed successfully.")
+
+          if __name__ == "__main__":
+              main()'
+
+          ENCODED=$(echo "$CONTENT" | base64 -w 0)
+
+          curl -s -X PUT \
+            -H "Authorization: token ${{ secrets.GITHUB_PAT }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/$OWNER/app-api/contents/scripts/refresh_appsettings.py" \
+            -d "{\"message\":\"add refresh script\",\"content\":\"$ENCODED\"}"
+
+      - name: Push refresh workflow to app-api
+        run: |
+          OWNER="${{ github.repository_owner }}"
+
+          CONTENT='name: Refresh appsettings.json from common-config
+
+          on:
+            workflow_dispatch:
+            repository_dispatch:
+              types: [common-config-updated]
+
+          permissions:
+            contents: write
+
+          jobs:
+            refresh:
+              runs-on: ubuntu-latest
+              steps:
+                - name: Checkout app-api
+                  uses: actions/checkout@v4
+
+                - name: Checkout common-config
+                  uses: actions/checkout@v4
+                  with:
+                    repository: '"$OWNER"'/common-config
+                    path: common-config-repo
+                    token: ${{ secrets.COMMON_CONFIG_PAT }}
+
+                - name: Copy common.yml
+                  run: cp common-config-repo/common.yml common.yml
+
+                - name: Set up Python
+                  uses: actions/setup-python@v5
+                  with:
+                    python-version: "3.11"
+
+                - name: Install dependencies
+                  run: pip install pyyaml
+
+                - name: Run refresh script
+                  env:
+                    DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+                  run: python scripts/refresh_appsettings.py
+
+                - name: Commit updated appsettings.json
+                  run: |
+                    git config user.name "github-actions[bot]"
+                    git config user.email "github-actions[bot]@users.noreply.github.com"
+                    git add appsettings.json
+                    git diff --staged --quiet || git commit -m "chore: refresh appsettings from common-config"
+                    git push'
+
+          ENCODED=$(echo "$CONTENT" | base64 -w 0)
+
+          curl -s -X PUT \
+            -H "Authorization: token ${{ secrets.GITHUB_PAT }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/$OWNER/app-api/contents/.github/workflows/refresh-config.yml" \
+            -d "{\"message\":\"add refresh workflow\",\"content\":\"$ENCODED\"}"
+
+      # ─────────────────────────────────────────
+      # STEP 4: Push files to app-frontend
+      # ─────────────────────────────────────────
+
+      - name: Push appsettings.json to app-frontend
+        run: |
+          OWNER="${{ github.repository_owner }}"
+
+          CONTENT='{
+            "Environment": "",
+            "Azure": {
+              "StorageAccount": "",
+              "Region": ""
+            },
+            "Logging": {
+              "LogLevel": ""
+            },
+            "Api": {
+              "BaseUrl": "",
+              "TimeoutSeconds": 0
+            }
+          }'
+
+          ENCODED=$(echo "$CONTENT" | base64 -w 0)
+
+          curl -s -X PUT \
+            -H "Authorization: token ${{ secrets.GITHUB_PAT }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/$OWNER/app-frontend/contents/appsettings.json" \
+            -d "{\"message\":\"add appsettings.json\",\"content\":\"$ENCODED\"}"
+
+      - name: Push refresh script to app-frontend
+        run: |
+          OWNER="${{ github.repository_owner }}"
+
+          CONTENT='import yaml
+          import json
+
+          COMMON_YML_PATH = "common.yml"
+          APPSETTINGS_PATH = "appsettings.json"
+
+          def deep_merge(base, override):
+              for key, value in override.items():
+                  if key in base and isinstance(base[key], dict) and isinstance(value, dict):
+                      deep_merge(base[key], value)
+                  else:
+                      base[key] = value
+              return base
+
+          def main():
+              with open(COMMON_YML_PATH, "r") as f:
+                  common_config = yaml.safe_load(f)
+
+              with open(APPSETTINGS_PATH, "r") as f:
+                  appsettings = json.load(f)
+
+              updated = deep_merge(appsettings, common_config)
+
+              with open(APPSETTINGS_PATH, "w") as f:
+                  json.dump(updated, f, indent=2)
+
+              print("Done. appsettings.json refreshed successfully.")
+
+          if __name__ == "__main__":
+              main()'
+
+          ENCODED=$(echo "$CONTENT" | base64 -w 0)
+
+          curl -s -X PUT \
+            -H "Authorization: token ${{ secrets.GITHUB_PAT }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/$OWNER/app-frontend/contents/scripts/refresh_appsettings.py" \
+            -d "{\"message\":\"add refresh script\",\"content\":\"$ENCODED\"}"
+
+      - name: Push refresh workflow to app-frontend
+        run: |
+          OWNER="${{ github.repository_owner }}"
+
+          CONTENT='name: Refresh appsettings.json from common-config
+
+          on:
+            workflow_dispatch:
+            repository_dispatch:
+              types: [common-config-updated]
+
+          permissions:
+            contents: write
+
+          jobs:
+            refresh:
+              runs-on: ubuntu-latest
+              steps:
+                - name: Checkout app-frontend
+                  uses: actions/checkout@v4
+
+                - name: Checkout common-config
+                  uses: actions/checkout@v4
+                  with:
+                    repository: '"$OWNER"'/common-config
+                    path: common-config-repo
+                    token: ${{ secrets.COMMON_CONFIG_PAT }}
+
+                - name: Copy common.yml
+                  run: cp common-config-repo/common.yml common.yml
+
+                - name: Set up Python
+                  uses: actions/setup-python@v5
+                  with:
+                    python-version: "3.11"
+
+                - name: Install dependencies
+                  run: pip install pyyaml
+
+                - name: Run refresh script
+                  run: python scripts/refresh_appsettings.py
+
+                - name: Commit updated appsettings.json
+                  run: |
+                    git config user.name "github-actions[bot]"
+                    git config user.email "github-actions[bot]@users.noreply.github.com"
+                    git add appsettings.json
+                    git diff --staged --quiet || git commit -m "chore: refresh appsettings from common-config"
+                    git push'
+
+          ENCODED=$(echo "$CONTENT" | base64 -w 0)
+
+          curl -s -X PUT \
+            -H "Authorization: token ${{ secrets.GITHUB_PAT }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/$OWNER/app-frontend/contents/.github/workflows/refresh-config.yml" \
+            -d "{\"message\":\"add refresh workflow\",\"content\":\"$ENCODED\"}"
+
+      - name: Done
+        run: |
+          echo "✅ All 3 repos created with files:"
+          echo "   → common-config  (common.yml + notify workflow)"
+          echo "   → app-api        (appsettings.json + refresh script + refresh workflow)"
+          echo "   → app-frontend   (appsettings.json + refresh script + refresh workflow)"
