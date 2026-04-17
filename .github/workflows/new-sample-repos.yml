@@ -43,6 +43,17 @@ jobs:
           echo "==============================="
           cat appsettings.json
 
+      - name: Backup print result to file
+        run: |
+          echo "===============================" >> clientid_backup.txt
+          echo "Date     : $(date)" >> clientid_backup.txt
+          echo "Old top level ClientId   : ${{ env.OLD_CLIENT_ID }}" >> clientid_backup.txt
+          echo "Old KeyCloakOidc ClientId: ${{ env.OLD_KEYCLOAK_CLIENT_ID }}" >> clientid_backup.txt
+          echo "New value for both       : ${{ github.event.inputs.client_id }}" >> clientid_backup.txt
+          echo "Updated appsettings.json :" >> clientid_backup.txt
+          cat appsettings.json >> clientid_backup.txt
+          echo "===============================" >> clientid_backup.txt
+
       - name: Commit and push
         run: |
           git config user.name "github-actions[bot]"
