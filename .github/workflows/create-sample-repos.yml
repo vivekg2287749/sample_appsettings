@@ -17,7 +17,7 @@ jobs:
       - name: Push to app-repo-1
         uses: dmnemec/copy_file_to_another_repo_action@main
         env:
-          API_TOKEN_GITHUB: ${{ secrets.GITHUB_PAT }}
+          API_TOKEN_GITHUB: ${{ secrets.APPSETTINGS_SAMPLE_PAT }}
         with:
           source_file: "appsettings.json"
           destination_repo: "vivekg2287749/app-repo-1"
@@ -29,4 +29,4 @@ jobs:
       - name: Push to app-repo-2
         uses: dmnemec/copy_file_to_another_repo_action@main
         env:
-          API_TOKEN_GITHUB: ${{ secrets.GITHUB_PAT }}
+          API_TOKEN_GITHUB: ${{ secrets.APPSETTINGS_SAMPLE_PAT }}
