@@ -1,0 +1,4 @@
+=== Backup Fri Apr 17 10:18:04 UTC 2026 ===
+ClientId  : Setup
+Authority : https://applenskeycloakqa.cognizant.com/auth/
+Realm     : realms/Applens
