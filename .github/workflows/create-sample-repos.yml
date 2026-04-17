@@ -1,30 +1,51 @@
-name: Update ClientId to Test
+name: Sync appsettings.json to all repos
 
 on:
-  workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
+    paths:
+      - "appsettings.json"    # only runs when this file changes
 
 jobs:
-  update-clientid:
+  sync:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
+      - name: Checkout central-config
+        uses: actions/checkout@v4
 
-      - name: Update ClientId in appsettings.json
-        run: |
-          jq '.KeyCloakOidc.ClientId = "test"' appsettings.json > appsettings.tmp.json
-          mv appsettings.tmp.json appsettings.json
-
-      - name: Commit and Push Changes
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add appsettings.json
-          git diff --cached --quiet || git commit -m "chore: update KeyCloakOidc ClientId to test"
-          git push
+      - name: Push to app-repo-1
+        uses: dmnemec/copy_file_to_another_repo_action@main
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          API_TOKEN_GITHUB: ${{ secrets.GITHUB_PAT }}
+        with:
+          source_file: "appsettings.json"
+          destination_repo: "vivekg2287749/app-repo-1"
+          destination_branch: "main"
+          user_email: "actions@github.com"
+          user_name: "github-actions"
+          commit_message: "sync: update appsettings.json from central-config"
+
+      - name: Push to app-repo-2
+        uses: dmnemec/copy_file_to_another_repo_action@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.GITHUB_PAT }}
+        with:
+          source_file: "appsettings.json"
+          destination_repo: "YOUR_USERNAME/app-repo-2"
+          destination_branch: "main"
+          user_email: "actions@github.com"
+          user_name: "github-actions"
+          commit_message: "sync: update appsettings.json from central-config"
+
+      - name: Push to app-repo-3
+        uses: dmnemec/copy_file_to_another_repo_action@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.GITHUB_PAT }}
+        with:
+          source_file: "appsettings.json"
+          destination_repo: "YOUR_USERNAME/app-repo-3"
+          destination_branch: "main"
+          user_email: "actions@github.com"
+          user_name: "github-actions"
+          commit_message: "sync: update appsettings.json from central-config"
