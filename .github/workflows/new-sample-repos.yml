@@ -15,14 +15,32 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Update ClientId
+      - name: Read current ClientId
+        run: |
+          OLD_CLIENT_ID=$(jq -r '.ClientId' appsettings.json)
+          echo "Current ClientId: $OLD_CLIENT_ID"
+          echo "OLD_CLIENT_ID=$OLD_CLIENT_ID" >> $GITHUB_ENV
+
+      - name: Backup old ClientId to text file
+        run: |
+          echo "Backup - ClientId: ${{ env.OLD_CLIENT_ID }} - Date: $(date)" >> clientid_backup.txt
+          echo "Backup saved: ${{ env.OLD_CLIENT_ID }}"
+
+      - name: Update ClientId with new value
         run: |
           jq --arg val "${{ github.event.inputs.client_id }}" '.ClientId = $val' appsettings.json > tmp.json && mv tmp.json appsettings.json
+
+      - name: Print result
+        run: |
+          echo "Old ClientId: ${{ env.OLD_CLIENT_ID }}"
+          echo "New ClientId: ${{ github.event.inputs.client_id }}"
+          echo "Updated appsettings.json:"
+          cat appsettings.json
 
       - name: Commit and push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add appsettings.json
-          git diff --staged --quiet || git commit -m "chore: update ClientId to ${{ github.event.inputs.client_id }}"
+          git add appsettings.json clientid_backup.txt
+          git diff --staged --quiet || git commit -m "chore: update ClientId from ${{ env.OLD_CLIENT_ID }} to ${{ github.event.inputs.client_id }}"
           git push https://x-access-token:${{ secrets.APPSETTINGS_SAMPLE_PAT }}@github.com/vivekg2287749/sample_appsettings.git
