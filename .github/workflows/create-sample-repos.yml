@@ -1,24 +1,32 @@
-name: Update ClientId in appsettings.json
+name: Sync appsettings.json to all repos
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "appsettings.json"
 
 jobs:
-  update:
+  sync:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout sample_appsettings
         uses: actions/checkout@v4
 
-      - name: Change ClientId to test
-        run: |
-          jq '.ClientId = "test"' appsettings.json > tmp.json && mv tmp.json appsettings.json
+      - name: Push to app-repo-1
+        uses: dmnemec/copy_file_to_another_repo_action@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.GITHUB_PAT }}
+        with:
+          source_file: "appsettings.json"
+          destination_repo: "vivekg2287749/app-repo-1"
+          destination_branch: "main"
+          user_email: "actions@github.com"
+          user_name: "github-actions"
+          commit_message: "sync: appsettings.json from sample_appsettings"
 
-      - name: Commit and push
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add appsettings.json
-          git diff --staged --quiet || git commit -m "chore: update ClientId to test"
-          git push https://x-access-token:${{ secrets.GITHUB_PAT }}@github.com/vivekg2287749/sample_appsettings.git
+      - name: Push to app-repo-2
+        uses: dmnemec/copy_file_to_another_repo_action@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.GITHUB_PAT }}
