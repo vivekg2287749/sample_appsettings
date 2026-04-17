@@ -1,51 +1,24 @@
-name: Sync appsettings.json to all repos
+name: Update ClientId in appsettings.json
 
 on:
-  push:
-    branches: [ "main" ]
-    paths:
-      - "appsettings.json"    # only runs when this file changes
+  workflow_dispatch:
 
 jobs:
-  sync:
+  update:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout central-config
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Push to app-repo-1
-        uses: dmnemec/copy_file_to_another_repo_action@main
-        env:
-          API_TOKEN_GITHUB: ${{ secrets.GITHUB_PAT }}
-        with:
-          source_file: "appsettings.json"
-          destination_repo: "vivekg2287749/app-repo-1"
-          destination_branch: "main"
-          user_email: "actions@github.com"
-          user_name: "github-actions"
-          commit_message: "sync: update appsettings.json from central-config"
+      - name: Change ClientId to test
+        run: |
+          jq '.ClientId = "test"' appsettings.json > tmp.json && mv tmp.json appsettings.json
 
-      - name: Push to app-repo-2
-        uses: dmnemec/copy_file_to_another_repo_action@main
-        env:
-          API_TOKEN_GITHUB: ${{ secrets.GITHUB_PAT }}
-        with:
-          source_file: "appsettings.json"
-          destination_repo: "YOUR_USERNAME/app-repo-2"
-          destination_branch: "main"
-          user_email: "actions@github.com"
-          user_name: "github-actions"
-          commit_message: "sync: update appsettings.json from central-config"
-
-      - name: Push to app-repo-3
-        uses: dmnemec/copy_file_to_another_repo_action@main
-        env:
-          API_TOKEN_GITHUB: ${{ secrets.GITHUB_PAT }}
-        with:
-          source_file: "appsettings.json"
-          destination_repo: "YOUR_USERNAME/app-repo-3"
-          destination_branch: "main"
-          user_email: "actions@github.com"
-          user_name: "github-actions"
-          commit_message: "sync: update appsettings.json from central-config"
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add appsettings.json
+          git diff --staged --quiet || git commit -m "chore: update ClientId to test"
+          git push https://x-access-token:${{ secrets.GITHUB_PAT }}@github.com/vivekg2287749/central-config.git
