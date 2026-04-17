@@ -18,23 +18,29 @@ jobs:
       - name: Read current ClientId
         run: |
           OLD_CLIENT_ID=$(jq -r '.ClientId' appsettings.json)
-          echo "Current ClientId: $OLD_CLIENT_ID"
+          OLD_KEYCLOAK_CLIENT_ID=$(jq -r '.KeyCloakOidc.ClientId' appsettings.json)
+          echo "Top level ClientId: $OLD_CLIENT_ID"
+          echo "KeyCloakOidc ClientId: $OLD_KEYCLOAK_CLIENT_ID"
           echo "OLD_CLIENT_ID=$OLD_CLIENT_ID" >> $GITHUB_ENV
+          echo "OLD_KEYCLOAK_CLIENT_ID=$OLD_KEYCLOAK_CLIENT_ID" >> $GITHUB_ENV
 
       - name: Backup old ClientId to text file
         run: |
-          echo "Backup - ClientId: ${{ env.OLD_CLIENT_ID }} - Date: $(date)" >> clientid_backup.txt
-          echo "Backup saved: ${{ env.OLD_CLIENT_ID }}"
+          echo "Backup - Date: $(date) | ClientId: ${{ env.OLD_CLIENT_ID }} | KeyCloakOidc.ClientId: ${{ env.OLD_KEYCLOAK_CLIENT_ID }}" >> clientid_backup.txt
 
       - name: Update ClientId with new value
         run: |
-          jq --arg val "${{ github.event.inputs.client_id }}" '.ClientId = $val' appsettings.json > tmp.json && mv tmp.json appsettings.json
+          jq --arg val "${{ github.event.inputs.client_id }}" \
+            '.ClientId = $val | .KeyCloakOidc.ClientId = $val' \
+            appsettings.json > tmp.json && mv tmp.json appsettings.json
 
       - name: Print result
         run: |
-          echo "Old ClientId: ${{ env.OLD_CLIENT_ID }}"
-          echo "New ClientId: ${{ github.event.inputs.client_id }}"
-          echo "Updated appsettings.json:"
+          echo "==============================="
+          echo "Old top level ClientId   : ${{ env.OLD_CLIENT_ID }}"
+          echo "Old KeyCloakOidc ClientId: ${{ env.OLD_KEYCLOAK_CLIENT_ID }}"
+          echo "New value for both       : ${{ github.event.inputs.client_id }}"
+          echo "==============================="
           cat appsettings.json
 
       - name: Commit and push
