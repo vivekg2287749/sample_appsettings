@@ -17,8 +17,16 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: Cognizant-GSA/SampleTesting
-          token: ${{ secrets.APPSETTINGS_SAMPLE_PAT }}
+          token: ${{ secrets.sample-repo-appsettings }}
           path: org-repo
+
+      - name: Remove existing folder and submodule
+        run: |
+          cd org-repo
+          git rm -rf sample_appsettings || true
+          git rm --cached sample_appsettings || true
+          rm -rf sample_appsettings
+          rm -f .gitmodules
 
       - name: Copy private repo into org repo as folder
         run: |
@@ -31,5 +39,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .
-          git diff --staged --quiet || git commit -m "chore: copy private repo to org"
+          git diff --staged --quiet || git commit -m "chore: copy private repo to org as folder"
           git push
