@@ -1,3 +1,11 @@
+===============================
+Date   : Wed Apr 22 06:28:34 UTC 2026
+Repo   : Common / UI
+Old ClientId          : Manage
+Old KeyCloakOidc.ClientId : Manage
+===============================
+New value applied:
+New ClientId: Test
 {
   "Logging": {
     "LogLevel": {
@@ -33,3 +41,4 @@
   "GetModulesList": "http://localhost:1940/v1.0/Search/GetModuleList/",
   "ClientId": "Test"
 }
+===============================
