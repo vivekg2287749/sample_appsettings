@@ -17,9 +17,6 @@ jobs:
     steps:
       - name: Checkout Common Repo
         uses: actions/checkout@v4
-        with:
-          repository: vivekg2287749/sample_appsettings
-          token: ${{ secrets.APIUI_SAMPLE_PAT }}
 
       - name: Read current ClientId
         run: |
@@ -73,9 +70,6 @@ jobs:
     steps:
       - name: Checkout Land API Repo
         uses: actions/checkout@v4
-        with:
-          repository: vivekg2287749/sample_appsettings
-          token: ${{ secrets.APIUI_SAMPLE_PAT }}
 
       - name: Read current ClientId
         run: |
