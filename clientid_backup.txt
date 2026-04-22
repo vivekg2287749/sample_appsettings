@@ -131,3 +131,47 @@ New ClientId: Test
   "ClientId": "Test"
 }
 ===============================
+===============================
+Date   : Wed Apr 22 06:24:20 UTC 2026
+Repo   : Common / UI
+Old ClientId          : Test
+Old KeyCloakOidc.ClientId : Test
+===============================
+New value applied:
+New ClientId: Manage
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft": "Warning",
+      "Microsoft.Hosting.Lifetime": "Information"
+    }
+  },
+  "CookieAuthJsonPath": {
+    "CookieFarm": "AppLensStageAZAD"
+  },
+  "EnableAzureADSAML": false,
+  "KeyCloakEnabled": false,
+  "KeyCloakOidc": {
+    "AuthProvider": "oidc",
+    "ClientId": "Manage",
+    "Authority": "https://applenskeycloakqa.cognizant.com/auth/",
+    "Splitter": "@",
+    "Realm": "realms/Applens",
+    "PrincipalName": "user_principal_name"
+  },
+  "UserId": "878110",
+  "AllowedHosts": "*",
+  "ConnectionStrings": {
+    "ApplensConnection": "Data Source=CPCINCHDV007572;Initial Catalog=AppVisionLens;Integrated Security=false;User Id = QATeam; Password =q@!te@m$2024; Connect Timeout=60000; Encrypt=true; TrustServerCertificate=true;"
+  },
+  "LoggingAPI": "https://applensqa.cognizant.com/loggingapi/Logger",
+  "CustomSettings": {
+    "Version": "Powered by AVM Engineering. Version:8.23  This site is best viewed in chrome browser."
+  },
+  "IsCognizant": true,
+  "UserRoleDetails": "http://localhost:19405/v1.0/Search/UserRoleDetails/",
+  "GetModulesList": "http://localhost:1940/v1.0/Search/GetModuleList/",
+  "ClientId": "Manage"
+}
+===============================
