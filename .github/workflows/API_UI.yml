@@ -1,0 +1,124 @@
+name: Update ClientId - All Repos
+
+on:
+  workflow_dispatch:
+    inputs:
+      common_client_id:
+        description: 'New ClientId for Common/UI repo'
+        required: true
+      landapi_client_id:
+        description: 'New ClientId for Land API repo'
+        required: true
+
+jobs:
+  update-common:
+    runs-on: ubuntu-latest        # use GitHub's computer (free)
+
+    steps:
+      - name: Checkout Common Repo
+        uses: actions/checkout@v4
+        with:
+          repository: your-org/common-repo   # which repo to go to
+          token: ${{ secrets.PAT }}           # your ID card to enter
+
+      - name: Read current ClientId
+        run: |
+          OLD=$(jq -r '.ClientId' appsettings.json)
+          OLD_KEYCLOAK=$(jq -r '.KeyCloakOidc.ClientId' appsettings.json)
+          echo "OLD_CLIENT_ID=$OLD" >> $GITHUB_ENV
+          echo "OLD_KEYCLOAK_CLIENT_ID=$OLD_KEYCLOAK" >> $GITHUB_ENV
+
+      - name: Backup old ClientId
+        run: |
+          echo "===============================" >> clientid_backup.txt
+          echo "Date   : $(date)" >> clientid_backup.txt
+          echo "Repo   : Common / UI" >> clientid_backup.txt
+          echo "Old ClientId          : ${{ env.OLD_CLIENT_ID }}" >> clientid_backup.txt
+          echo "Old KeyCloakOidc.ClientId : ${{ env.OLD_KEYCLOAK_CLIENT_ID }}" >> clientid_backup.txt
+          echo "===============================" >> clientid_backup.txt
+
+      - name: Update ClientId with new value
+        run: |
+          jq --arg val "${{ github.event.inputs.common_client_id }}" \
+            '.ClientId = $val | .KeyCloakOidc.ClientId = $val' \
+            appsettings.json > tmp.json && mv tmp.json appsettings.json
+
+      - name: Show changes summary
+        run: |
+          echo "==============================="
+          echo "REPO    : Common / UI"
+          echo "OLD     : ${{ env.OLD_CLIENT_ID }}"
+          echo "NEW     : ${{ github.event.inputs.common_client_id }}"
+          echo "==============================="
+          cat appsettings.json
+
+      - name: Backup new ClientId to file
+        run: |
+          echo "New value applied:" >> clientid_backup.txt
+          echo "New ClientId: ${{ github.event.inputs.common_client_id }}" >> clientid_backup.txt
+          cat appsettings.json >> clientid_backup.txt
+          echo "===============================" >> clientid_backup.txt
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add appsettings.json clientid_backup.txt
+          git diff --staged --quiet || git commit -m "chore: update ClientId from ${{ env.OLD_CLIENT_ID }} to ${{ github.event.inputs.common_client_id }}"
+          git push https://x-access-token:${{ secrets.PAT }}@github.com/your-org/common-repo.git
+
+  update-landapi:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Land API Repo
+        uses: actions/checkout@v4
+        with:
+          repository: your-org/land-api-repo
+          token: ${{ secrets.PAT }}
+
+      - name: Read current ClientId
+        run: |
+          OLD=$(jq -r '.ClientId' appsettings.json)
+          OLD_KEYCLOAK=$(jq -r '.KeyCloakOidc.ClientId' appsettings.json)
+          echo "OLD_CLIENT_ID=$OLD" >> $GITHUB_ENV
+          echo "OLD_KEYCLOAK_CLIENT_ID=$OLD_KEYCLOAK" >> $GITHUB_ENV
+
+      - name: Backup old ClientId
+        run: |
+          echo "===============================" >> clientid_backup.txt
+          echo "Date   : $(date)" >> clientid_backup.txt
+          echo "Repo   : Land API" >> clientid_backup.txt
+          echo "Old ClientId              : ${{ env.OLD_CLIENT_ID }}" >> clientid_backup.txt
+          echo "Old KeyCloakOidc.ClientId : ${{ env.OLD_KEYCLOAK_CLIENT_ID }}" >> clientid_backup.txt
+          echo "===============================" >> clientid_backup.txt
+
+      - name: Update ClientId with new value
+        run: |
+          jq --arg val "${{ github.event.inputs.landapi_client_id }}" \
+            '.ClientId = $val | .KeyCloakOidc.ClientId = $val' \
+            appsettings.json > tmp.json && mv tmp.json appsettings.json
+
+      - name: Show changes summary
+        run: |
+          echo "==============================="
+          echo "REPO    : Land API"
+          echo "OLD     : ${{ env.OLD_CLIENT_ID }}"
+          echo "NEW     : ${{ github.event.inputs.landapi_client_id }}"
+          echo "==============================="
+          cat appsettings.json
+
+      - name: Backup new ClientId to file
+        run: |
+          echo "New value applied:" >> clientid_backup.txt
+          echo "New ClientId: ${{ github.event.inputs.landapi_client_id }}" >> clientid_backup.txt
+          cat appsettings.json >> clientid_backup.txt
+          echo "===============================" >> clientid_backup.txt
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add appsettings.json clientid_backup.txt
+          git diff --staged --quiet || git commit -m "chore: update ClientId from ${{ env.OLD_CLIENT_ID }} to ${{ github.event.inputs.landapi_client_id }}"
+          git push https://x-access-token:${{ secrets.PAT }}@github.com/your-org/land-api-repo.git
