@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: Cognizant-GSA/SampleTesting
-          token: ${{ secrets.sample-repo-appsettings }}
+          token: ${{ secrets.APPSETTINGS_SAMPLE_PAT }}
           path: org-repo
 
       - name: Remove existing folder and submodule
