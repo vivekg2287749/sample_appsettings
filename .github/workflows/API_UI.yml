@@ -76,12 +76,12 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Pull latest changes        # ← ADD THIS NEW STEP
+        run: git pull origin main
+
       - name: Read current ClientId
         run: |
           OLD=$(jq -r '.ClientId' appsettings.json)
-          OLD_KEYCLOAK=$(jq -r '.KeyCloakOidc.ClientId' appsettings.json)
-          echo "OLD_CLIENT_ID=$OLD" >> $GITHUB_ENV
-          echo "OLD_KEYCLOAK_CLIENT_ID=$OLD_KEYCLOAK" >> $GITHUB_ENV
 
       - name: Backup old ClientId
         run: |
