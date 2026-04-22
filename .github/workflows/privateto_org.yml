@@ -16,8 +16,8 @@ jobs:
       - name: Checkout organization repo
         uses: actions/checkout@v4
         with:
-          repository: YOUR_ORG_NAME/YOUR_ORG_REPO   # ← change this
-          token: ${{ secrets.APPSETTINGS_SAMPLE_PAT }}
+          repository: Cognizant-GSA/SampleTesting
+          token: ${{ secrets.sample-repo-appsettings }}
           path: org-repo
 
       - name: Copy private repo into org repo as folder
