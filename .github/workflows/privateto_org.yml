@@ -22,6 +22,7 @@ jobs:
 
       - name: Copy private repo into org repo as folder
         run: |
+          rm -rf private-repo/.git
           cp -r private-repo org-repo/sample_appsettings
 
       - name: Commit and push to org repo
